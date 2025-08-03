@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.4.6] - 2025-08-03
+
+### <!-- 1 -->🐛 Bug Fixes
+
+- Close polygons by repeating the first point
+
 ## [1.4.5] - 2025-08-03
 
 ### <!-- 4 -->⚡ Performance
