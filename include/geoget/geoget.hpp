@@ -601,6 +601,11 @@ namespace geoget {
                     auto [x, y, z] = concord::gps_to_enu(point.lat, point.lon, 0.0, datum.lat, datum.lon, datum.alt);
                     concord_polygon.addPoint(concord::Point{x, y, z});
                 }
+                // Automatically close the polygon by adding the first point at the end if we have 3+ points
+                if (polygon.size() >= 3) {
+                    auto [x, y, z] = concord::gps_to_enu(polygon[0].lat, polygon[0].lon, 0.0, datum.lat, datum.lon, datum.alt);
+                    concord_polygon.addPoint(concord::Point{x, y, z});
+                }
                 concord_polygons.push_back(concord_polygon);
             }
             return concord_polygons;
