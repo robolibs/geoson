@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -20,7 +21,7 @@ namespace geoson {
                 // WGS output: convert Point to ENU with datum, then to WGS
                 concord::ENU enu{p, datum};
                 concord::WGS wgs = enu.toWGS();
-                return nlohmann::json::array({wgs.lon, wgs.lat, wgs.alt});
+                return nlohmann::json::array({wgs.lon, wgs.lat, static_cast<int>(std::round(wgs.alt))});
             }
         };
 
