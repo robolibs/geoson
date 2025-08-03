@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.4.4] - 2025-08-03
+
+### <!-- 0 -->⛰️  Features
+
+- Set default output CRS to WGS
+
 ## [1.4.2] - 2025-07-07
 
 ### <!-- 0 -->⛰️  Features
