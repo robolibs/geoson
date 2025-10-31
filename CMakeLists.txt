@@ -28,8 +28,11 @@ FetchContent_Declare(concord GIT_REPOSITORY https://github.com/smolfetch/concord
 FetchContent_MakeAvailable(concord)
 list(APPEND ext_deps concord::concord)
 
-FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz)
-FetchContent_MakeAvailable(json)
+find_package(nlohmann_json QUIET)
+if(NOT nlohmann_json_FOUND)
+    FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz)
+    FetchContent_MakeAvailable(json)
+endif()
 list(APPEND ext_deps nlohmann_json::nlohmann_json)
 
 # --------------------------------------------------------------------------------------------------
