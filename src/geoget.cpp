@@ -1,6 +1,9 @@
 #include "geoget/geoget.hpp"
+#include <nlohmann/json.hpp>
 
 namespace geoget {
+
+    using json = nlohmann::json;
 
     std::string PolygonDrawer::get_html() {
         if (single_point_mode) {

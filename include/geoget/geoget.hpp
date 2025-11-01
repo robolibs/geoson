@@ -6,7 +6,7 @@
 #include <iostream>
 #include <mutex>
 #include <netinet/in.h>
-#include <nlohmann/json.hpp>
+
 #include <sstream>
 #include <string>
 #include <sys/socket.h>
@@ -15,8 +15,6 @@
 #include <vector>
 
 namespace geoget {
-
-    using json = nlohmann::json;
 
     struct Point {
         double lat;
