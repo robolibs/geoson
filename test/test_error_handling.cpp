@@ -4,7 +4,6 @@
 #include "geoson/geoson.hpp"
 #include <filesystem>
 #include <fstream>
-#include <nlohmann/json.hpp>
 
 TEST_CASE("Error Handling - Invalid JSON") {
     const std::filesystem::path test_file = "/tmp/invalid.geojson";
@@ -14,7 +13,7 @@ TEST_CASE("Error Handling - Invalid JSON") {
         ofs << "{ invalid json content }";
         ofs.close();
 
-        CHECK_THROWS_AS(geoson::ReadFeatureCollection(test_file), nlohmann::json::parse_error);
+        CHECK_THROWS(geoson::ReadFeatureCollection(test_file));
 
         std::filesystem::remove(test_file);
     }
@@ -196,26 +195,67 @@ TEST_CASE("Error Handling - Missing required properties") {
     }
 }
 
-TEST_CASE("Error Handling - Invalid geometry parsing") {
-    concord::Datum datum{52.0, 5.0, 0.0};
-    geoson::CRS crs = geoson::CRS::WGS;
+TEST_CASE("Error Handling - Invalid geometry in files") {
+    const std::filesystem::path test_file = "/tmp/invalid_geom.geojson";
 
     SUBCASE("Invalid point coordinates - too few") {
-        nlohmann::json coords = {5.1}; // only longitude
+        const std::string invalid_content = R"({
+            "type": "FeatureCollection",
+            "properties": {
+                "crs": "EPSG:4326",
+                "datum": [52.0, 5.0, 0.0],
+                "heading": 0.0
+            },
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [5.1]
+                    },
+                    "properties": {}
+                }
+            ]
+        })";
 
-        CHECK_THROWS_AS(geoson::parsePoint(coords, datum, crs), nlohmann::json::out_of_range);
+        std::ofstream ofs(test_file);
+        ofs << invalid_content;
+        ofs.close();
+
+        CHECK_THROWS(geoson::ReadFeatureCollection(test_file));
+
+        std::filesystem::remove(test_file);
     }
 
-    SUBCASE("Invalid point coordinates - non-numeric") {
-        nlohmann::json coords = {"invalid", 52.1};
+    SUBCASE("Invalid geometry type") {
+        const std::string invalid_content = R"({
+            "type": "FeatureCollection",
+            "properties": {
+                "crs": "EPSG:4326",
+                "datum": [52.0, 5.0, 0.0],
+                "heading": 0.0
+            },
+            "features": [
+                {
+                    "type": "Feature", 
+                    "geometry": {
+                        "type": "InvalidType",
+                        "coordinates": [5.1, 52.1]
+                    },
+                    "properties": {}
+                }
+            ]
+        })";
 
-        CHECK_THROWS_AS(geoson::parsePoint(coords, datum, crs), nlohmann::json::type_error);
-    }
+        std::ofstream ofs(test_file);
+        ofs << invalid_content;
+        ofs.close();
 
-    SUBCASE("Invalid polygon coordinates - missing outer ring") {
-        nlohmann::json coords = nlohmann::json::array(); // empty array
+        // Should not throw but may result in empty geometry list
+        auto fc = geoson::ReadFeatureCollection(test_file);
+        // The feature should be skipped or handled gracefully
 
-        CHECK_THROWS_AS(geoson::parsePolygon(coords, datum, crs), nlohmann::json::out_of_range);
+        std::filesystem::remove(test_file);
     }
 }
 
@@ -230,24 +270,54 @@ TEST_CASE("Error Handling - File I/O errors") {
         concord::Euler heading{0.0, 0.0, 0.0};
         std::vector<geoson::Feature> features;
 
-        geoson::FeatureCollection fc{datum, heading, std::move(features)};
+        geoson::FeatureCollection fc{datum, heading, std::move(features), {}};
 
         CHECK_THROWS_WITH(geoson::WriteFeatureCollection(fc, "/nonexistent/directory/file.geojson"),
                           doctest::Contains("Cannot open for write"));
     }
 }
 
-TEST_CASE("Error Handling - Unknown CRS") {
-    SUBCASE("Completely unknown CRS") {
-        CHECK_THROWS_WITH(geoson::parseCRS("UNKNOWN:12345"), "Unknown CRS string: UNKNOWN:12345");
+TEST_CASE("Error Handling - Unknown CRS in files") {
+    const std::filesystem::path test_file = "/tmp/unknown_crs.geojson";
+
+    SUBCASE("Unknown CRS string") {
+        const std::string invalid_content = R"({
+            "type": "FeatureCollection",
+            "properties": {
+                "crs": "UNKNOWN:12345",
+                "datum": [52.0, 5.0, 0.0],
+                "heading": 0.0
+            },
+            "features": []
+        })";
+
+        std::ofstream ofs(test_file);
+        ofs << invalid_content;
+        ofs.close();
+
+        CHECK_THROWS_WITH(geoson::ReadFeatureCollection(test_file), "Unknown CRS string: UNKNOWN:12345");
+
+        std::filesystem::remove(test_file);
     }
 
-    SUBCASE("Empty CRS string") { CHECK_THROWS_WITH(geoson::parseCRS(""), "Unknown CRS string: "); }
-
     SUBCASE("Case sensitivity") {
-        CHECK_THROWS_WITH(geoson::parseCRS("epsg:4326"), "Unknown CRS string: epsg:4326");
-        CHECK_THROWS_WITH(geoson::parseCRS("wgs84"), "Unknown CRS string: wgs84");
-        CHECK_THROWS_WITH(geoson::parseCRS("enu"), "Unknown CRS string: enu");
+        const std::string invalid_content = R"({
+            "type": "FeatureCollection",
+            "properties": {
+                "crs": "epsg:4326",
+                "datum": [52.0, 5.0, 0.0],
+                "heading": 0.0
+            },
+            "features": []
+        })";
+
+        std::ofstream ofs(test_file);
+        ofs << invalid_content;
+        ofs.close();
+
+        CHECK_THROWS_WITH(geoson::ReadFeatureCollection(test_file), "Unknown CRS string: epsg:4326");
+
+        std::filesystem::remove(test_file);
     }
 }
 

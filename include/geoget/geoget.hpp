@@ -6,7 +6,6 @@
 #include <iostream>
 #include <mutex>
 #include <netinet/in.h>
-#include <nlohmann/json.hpp>
 #include <sstream>
 #include <string>
 #include <sys/socket.h>
@@ -15,8 +14,6 @@
 #include <vector>
 
 namespace geoget {
-
-    using json = nlohmann::json;
 
     struct Point {
         double lat;
@@ -603,7 +600,8 @@ namespace geoget {
                 }
                 // Automatically close the polygon by adding the first point at the end if we have 3+ points
                 if (polygon.size() >= 3) {
-                    auto [x, y, z] = concord::gps_to_enu(polygon[0].lat, polygon[0].lon, 0.0, datum.lat, datum.lon, datum.alt);
+                    auto [x, y, z] =
+                        concord::gps_to_enu(polygon[0].lat, polygon[0].lon, 0.0, datum.lat, datum.lon, datum.alt);
                     concord_polygon.addPoint(concord::Point{x, y, z});
                 }
                 concord_polygons.push_back(concord_polygon);

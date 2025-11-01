@@ -5,23 +5,28 @@
 
 TEST_CASE("CRS conversion during output") {
     // Create a simple test GeoJSON with WGS coordinates
-    nlohmann::json test_geojson = {
-        {"type", "FeatureCollection"},
-        {"properties",
-         {{"crs", "EPSG:4326"},
-          {"datum", {52.0, 5.0, 100.0}}, // lat, lon, alt
-          {"heading", 45.0}}},
-        {"features",
-         {{{"type", "Feature"},
-           {"geometry",
+    const std::string test_geojson_str = R"({
+        "type": "FeatureCollection",
+        "properties": {
+            "crs": "EPSG:4326",
+            "datum": [52.0, 5.0, 100.0],
+            "heading": 45.0
+        },
+        "features": [
             {
-                {"type", "Point"}, {"coordinates", {5.1, 52.1, 105.0}} // lon, lat, alt in WGS
-            }},
-           {"properties", {{"name", "test_point"}}}}}}};
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [5.1, 52.1, 105.0]
+                },
+                "properties": {"name": "test_point"}
+            }
+        ]
+    })";
 
     // Write test file
     std::ofstream ofs("test_crs_input.geojson");
-    ofs << test_geojson.dump(2);
+    ofs << test_geojson_str;
     ofs.close();
 
     SUBCASE("Parse and verify internal representation") {
@@ -29,15 +34,12 @@ TEST_CASE("CRS conversion during output") {
 
         // Check that we parsed correctly
         CHECK(fc.features.size() == 1);
-        // Note: Internal representation is always Point (ENU) coordinates, no CRS stored
 
         // Internal representation should be in Point coordinates
         auto *point = std::get_if<concord::Point>(&fc.features[0].geometry);
         REQUIRE(point != nullptr);
 
         // The coordinates should have been converted from WGS to ENU/Point coordinates
-        // We can't check exact values without knowing the exact transformation,
-        // but we can verify the structure is correct
         CHECK(point->x != 5.1);  // Should be different from original lon
         CHECK(point->y != 52.1); // Should be different from original lat
     }
@@ -48,12 +50,10 @@ TEST_CASE("CRS conversion during output") {
         // Test output in WGS format
         geoson::write(fc, "test_output_wgs.geojson", geoson::CRS::WGS);
         auto fc_wgs = geoson::read("test_output_wgs.geojson");
-        // Note: Internal representation is always Point coordinates, no CRS stored
 
         // Test output in ENU format
         geoson::write(fc, "test_output_enu.geojson", geoson::CRS::ENU);
         auto fc_enu = geoson::read("test_output_enu.geojson");
-        // Note: Internal representation is always Point coordinates, no CRS stored
 
         // Both should have the same internal representation after parsing
         auto *point_wgs = std::get_if<concord::Point>(&fc_wgs.features[0].geometry);

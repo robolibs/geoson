@@ -117,7 +117,7 @@ TEST_CASE("Types - FeatureCollection") {
     lineProps["name"] = "test_line";
     features.emplace_back(geoson::Feature{line, lineProps});
 
-    geoson::FeatureCollection fc{datum, heading, std::move(features)};
+    geoson::FeatureCollection fc{datum, heading, std::move(features), {}};
 
     // Note: Internal representation is always Point coordinates, no CRS stored
     CHECK(fc.datum.lat == doctest::Approx(52.0));

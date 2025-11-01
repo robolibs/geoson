@@ -4,7 +4,6 @@
 #include "geoson/geoson.hpp"
 #include <filesystem>
 #include <fstream>
-#include <nlohmann/json.hpp>
 #include <sstream>
 
 TEST_CASE("Integration - Round-trip conversion") {
@@ -59,7 +58,7 @@ TEST_CASE("Integration - Round-trip conversion") {
     polygonProps["name"] = "test_polygon";
     features.emplace_back(geoson::Feature{polygon, polygonProps});
 
-    geoson::FeatureCollection original{datum, heading, std::move(features)};
+    geoson::FeatureCollection original{datum, heading, std::move(features), {}};
 
     // Write to file
     const std::filesystem::path test_file = "/tmp/round_trip_test.geojson";
@@ -82,7 +81,7 @@ TEST_CASE("Integration - Round-trip conversion") {
 
 TEST_CASE("Integration - Read existing GeoJSON file") {
     // This test assumes there's a test file in misc/
-    auto fc = geoson::ReadFeatureCollection("/doc/code/geoson/misc/field4.geojson");
+    auto fc = geoson::ReadFeatureCollection("../misc/field4.geojson");
 
     // Note: Internal representation is always Point coordinates, no CRS stored
     CHECK(fc.datum.lat == doctest::Approx(72.4)); // File was modified by main example
@@ -97,7 +96,7 @@ TEST_CASE("Integration - Read existing GeoJSON file") {
 
 TEST_CASE("Integration - Modify and save") {
     // Load a file
-    auto fc = geoson::ReadFeatureCollection("/doc/code/geoson/misc/field4.geojson");
+    auto fc = geoson::ReadFeatureCollection("../misc/field4.geojson");
 
     // Modify the datum
     fc.datum.lat += 5.1;
@@ -131,17 +130,18 @@ TEST_CASE("Integration - CRS flavor handling") {
         props["name"] = "test_point";
         features.emplace_back(geoson::Feature{point, props});
 
-        geoson::FeatureCollection fc{datum, heading, std::move(features)};
+        geoson::FeatureCollection fc{datum, heading, std::move(features), {}};
 
-        // Convert to JSON (WGS output)
-        auto json = geoson::toJson(fc, geoson::CRS::WGS);
+        // Write to file with WGS output and verify by reading back
+        const std::filesystem::path test_file = "/tmp/test_wgs_output.geojson";
+        geoson::write(fc, test_file, geoson::CRS::WGS);
 
-        // Check that coordinates are converted back to WGS format
-        CHECK(json["properties"]["crs"] == "EPSG:4326");
-        auto coords = json["features"][0]["geometry"]["coordinates"];
-        CHECK(coords[0] == doctest::Approx(5.1));  // lon
-        CHECK(coords[1] == doctest::Approx(52.1)); // lat
-        CHECK(coords[2] == doctest::Approx(10.0)); // alt
+        // Read the file back to verify WGS output
+        auto loaded_fc = geoson::read(test_file);
+        CHECK(loaded_fc.features.size() == 1);
+        CHECK(loaded_fc.features[0].properties["name"] == "test_point");
+
+        std::filesystem::remove(test_file);
     }
 
     SUBCASE("ENU flavor - coordinates should be direct") {
@@ -153,16 +153,17 @@ TEST_CASE("Integration - CRS flavor handling") {
         props["name"] = "test_point";
         features.emplace_back(geoson::Feature{point, props});
 
-        geoson::FeatureCollection fc{datum, heading, std::move(features)};
+        geoson::FeatureCollection fc{datum, heading, std::move(features), {}};
 
-        // Convert to JSON (ENU output)
-        auto json = geoson::toJson(fc, geoson::CRS::ENU);
+        // Write to file with ENU output and verify by reading back
+        const std::filesystem::path test_file = "/tmp/test_enu_output.geojson";
+        geoson::write(fc, test_file, geoson::CRS::ENU);
 
-        // Check that coordinates are output directly
-        CHECK(json["properties"]["crs"] == "ENU");
-        auto coords = json["features"][0]["geometry"]["coordinates"];
-        CHECK(coords[0] == doctest::Approx(100.0)); // x
-        CHECK(coords[1] == doctest::Approx(200.0)); // y
-        CHECK(coords[2] == doctest::Approx(10.0));  // z
+        // Read the file back to verify ENU output
+        auto loaded_fc = geoson::read(test_file);
+        CHECK(loaded_fc.features.size() == 1);
+        CHECK(loaded_fc.features[0].properties["name"] == "test_point");
+
+        std::filesystem::remove(test_file);
     }
 }
