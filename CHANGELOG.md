@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0] - 2025-11-01
+
+### <!-- 0 -->⛰️  Features
+
+- Refactor polygon drawing to separate implementation from interface
+
+### <!-- 2 -->🚜 Refactor
+
+- Move nlohmann/json include to .cpp file
+- Refactor `geoson` library to improve modularity
+
 ## [1.4.7] - 2025-10-31
 
 ### Build
