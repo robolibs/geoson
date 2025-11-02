@@ -1,9 +1,9 @@
 #include "geoget/geoget.hpp"
-#include <nlohmann/json.hpp>
+#include <boost/json.hpp>
 
 namespace geoget {
 
-    using json = nlohmann::json;
+    using json = boost::json::value;
 
     std::string PolygonDrawer::get_html() {
         if (single_point_mode) {
@@ -234,9 +234,10 @@ namespace geoget {
 
         std::string body = request.substr(body_start + 4);
         try {
-            json data = json::parse(body);
-            double lat = data["lat"].get<double>();
-            double lon = data["lon"].get<double>();
+            json data = boost::json::parse(body);
+            auto const &obj = data.as_object();
+            double lat = boost::json::value_to<double>(obj.at("lat"));
+            double lon = boost::json::value_to<double>(obj.at("lon"));
 
             points.push_back({lat, lon});
 
@@ -259,9 +260,10 @@ namespace geoget {
 
         std::string body = request.substr(body_start + 4);
         try {
-            json data = json::parse(body);
-            double lat = data["lat"].get<double>();
-            double lon = data["lon"].get<double>();
+            json data = boost::json::parse(body);
+            auto const &obj = data.as_object();
+            double lat = boost::json::value_to<double>(obj.at("lat"));
+            double lon = boost::json::value_to<double>(obj.at("lon"));
 
             points.clear();
             points.push_back({lat, lon});
@@ -353,7 +355,7 @@ namespace geoget {
         }
         done_cv.notify_one();
 
-        json response;
+        boost::json::object response;
         response["success"] = true;
         if (single_point_mode) {
             response["pointCount"] = all_single_points.size();
@@ -366,7 +368,7 @@ namespace geoget {
         return "HTTP/1.1 200 OK\r\n"
                "Content-Type: application/json\r\n"
                "\r\n" +
-               response.dump();
+               boost::json::serialize(response);
     }
 
     std::vector<Point> PolygonDrawer::collect_points() {

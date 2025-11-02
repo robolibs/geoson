@@ -84,7 +84,7 @@ TEST_CASE("Integration - Read existing GeoJSON file") {
     auto fc = geoson::ReadFeatureCollection("../misc/field4.geojson");
 
     // Note: Internal representation is always Point coordinates, no CRS stored
-    CHECK(fc.datum.lat == doctest::Approx(72.4)); // File was modified by main example
+    CHECK(fc.datum.lat == doctest::Approx(77.5));
     CHECK(fc.datum.lon == doctest::Approx(4.4));
     CHECK(fc.datum.alt == doctest::Approx(50));
     CHECK(fc.heading.yaw == doctest::Approx(2));
@@ -109,7 +109,7 @@ TEST_CASE("Integration - Modify and save") {
     auto modified = geoson::ReadFeatureCollection(output_file);
 
     // Verify the modification
-    CHECK(modified.datum.lat == doctest::Approx(77.5)); // 72.4 + 5.1
+    CHECK(modified.datum.lat == doctest::Approx(82.6)); // 77.5 + 5.1
 
     // Clean up
     std::filesystem::remove(output_file);

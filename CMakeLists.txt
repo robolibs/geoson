@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.15)
 
-set(project_name geoson)
+set(CMAKE_C_COMPILER "clang")
+set(CMAKE_CXX_COMPILER "clang++")# Use GCC 13 for compatibility
 
+set(project_name geoson)
 project(${project_name} VERSION 2.0.0 LANGUAGES CXX)
 
 add_compile_options(-Wall -Wextra -Wpedantic)
@@ -11,6 +13,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED On)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 set(params
     -Wno-reorder
     -Wno-unused-parameter
@@ -28,12 +31,8 @@ FetchContent_Declare(concord GIT_REPOSITORY https://github.com/smolfetch/concord
 FetchContent_MakeAvailable(concord)
 list(APPEND ext_deps concord::concord)
 
-find_package(nlohmann_json QUIET)
-if(NOT nlohmann_json_FOUND)
-    FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz)
-    FetchContent_MakeAvailable(json)
-endif()
-list(APPEND ext_deps nlohmann_json::nlohmann_json)
+find_package(Boost REQUIRED COMPONENTS json)
+list(APPEND ext_deps Boost::json)
 
 # --------------------------------------------------------------------------------------------------
 # Build library

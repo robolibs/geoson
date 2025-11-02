@@ -1,9 +1,10 @@
 #include "geoson/parser.hpp"
 
+#include <boost/json.hpp>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <nlohmann/json.hpp>
+#include <sstream>
 #include <stdexcept>
 #include <unordered_map>
 #include <variant>
@@ -12,51 +13,67 @@
 namespace geoson {
 
     namespace op {
-        nlohmann::json ReadFeatureCollection(const std::filesystem::path &file) {
+        boost::json::value ReadFeatureCollection(const std::filesystem::path &file) {
             std::ifstream ifs(file);
             if (!ifs) {
                 throw std::runtime_error("geoson::ReadFeatureCollection(): cannot open \"" + file.string() + '\"');
             }
 
-            nlohmann::json j;
-            ifs >> j;
+            std::stringstream buffer;
+            buffer << ifs.rdbuf();
+            boost::json::value j = boost::json::parse(buffer.str());
 
-            if (!j.is_object() || !j.contains("type") || !j["type"].is_string()) {
+            if (!j.is_object() || !j.as_object().contains("type") || !j.as_object().at("type").is_string()) {
                 throw std::runtime_error(
                     "geoson::ReadFeatureCollection(): top-level object has no string 'type' field");
             }
 
-            auto type = j["type"].get<std::string>();
+            auto type = std::string(j.as_object().at("type").as_string());
             if (type == "FeatureCollection") {
                 return j;
             }
             if (type == "Feature") {
-                return nlohmann::json{{"type", "FeatureCollection"}, {"features", nlohmann::json::array({j})}};
+                boost::json::object fc;
+                fc["type"] = "FeatureCollection";
+                boost::json::array features;
+                features.push_back(j);
+                fc["features"] = std::move(features);
+                return fc;
             }
 
-            nlohmann::json feat = {{"type", "Feature"}, {"geometry", j}, {"properties", nlohmann::json::object()}};
-            return nlohmann::json{{"type", "FeatureCollection"}, {"features", nlohmann::json::array({feat})}};
+            boost::json::object feat;
+            feat["type"] = "Feature";
+            feat["geometry"] = j;
+            feat["properties"] = boost::json::object();
+            boost::json::object fc;
+            fc["type"] = "FeatureCollection";
+            boost::json::array features;
+            features.push_back(std::move(feat));
+            fc["features"] = std::move(features);
+            return fc;
         }
     } // namespace op
 
-    using json = nlohmann::json;
+    using json = boost::json::value;
 
     std::unordered_map<std::string, std::string> parseProperties(const json &props) {
         std::unordered_map<std::string, std::string> m;
-        m.reserve(props.size());
-        for (auto const &item : props.items()) {
+        auto const &obj = props.as_object();
+        m.reserve(obj.size());
+        for (auto const &item : obj) {
             if (item.value().is_string())
-                m[item.key()] = item.value().get<std::string>();
+                m[std::string(item.key())] = std::string(item.value().as_string());
             else
-                m[item.key()] = item.value().dump();
+                m[std::string(item.key())] = boost::json::serialize(item.value());
         }
         return m;
     }
 
     concord::Point parsePoint(const json &coords, const concord::Datum &datum, geoson::CRS crs) {
-        double x = coords.at(0).get<double>();
-        double y = coords.at(1).get<double>();
-        double z = coords.size() > 2 ? coords.at(2).get<double>() : 0.0;
+        auto const &arr = coords.as_array();
+        double x = boost::json::value_to<double>(arr.at(0));
+        double y = boost::json::value_to<double>(arr.at(1));
+        double z = arr.size() > 2 ? boost::json::value_to<double>(arr.at(2)) : 0.0;
 
         if (crs == geoson::CRS::ENU) {
             return concord::Point{x, y, z};
@@ -69,8 +86,9 @@ namespace geoson {
 
     Geometry parseLineString(const json &coords, const concord::Datum &datum, geoson::CRS crs) {
         std::vector<concord::Point> pts;
-        pts.reserve(coords.size());
-        for (auto const &c : coords)
+        auto const &arr = coords.as_array();
+        pts.reserve(arr.size());
+        for (auto const &c : arr)
             pts.push_back(parsePoint(c, datum, crs));
         if (pts.size() == 2)
             return concord::Line{pts[0], pts[1]};
@@ -80,34 +98,41 @@ namespace geoson {
 
     concord::Polygon parsePolygon(const json &coords, const concord::Datum &datum, geoson::CRS crs) {
         std::vector<concord::Point> pts;
-        auto const &ring = coords.at(0);
-        pts.reserve(ring.size());
-        for (auto const &c : ring)
+        auto const &arr = coords.as_array();
+        auto const &ring = arr.at(0);
+        auto const &ring_arr = ring.as_array();
+        pts.reserve(ring_arr.size());
+        for (auto const &c : ring_arr)
             pts.push_back(parsePoint(c, datum, crs));
         return concord::Polygon{pts};
     }
 
     std::vector<Geometry> parseGeometry(const json &geom, const concord::Datum &datum, geoson::CRS crs) {
         std::vector<Geometry> out;
-        auto type = geom.at("type").get<std::string>();
+        auto const &obj = geom.as_object();
+        auto type = std::string(obj.at("type").as_string());
 
         if (type == "Point") {
-            out.emplace_back(parsePoint(geom.at("coordinates"), datum, crs));
+            out.emplace_back(parsePoint(obj.at("coordinates"), datum, crs));
         } else if (type == "LineString") {
-            out.emplace_back(parseLineString(geom.at("coordinates"), datum, crs));
+            out.emplace_back(parseLineString(obj.at("coordinates"), datum, crs));
         } else if (type == "Polygon") {
-            out.emplace_back(parsePolygon(geom.at("coordinates"), datum, crs));
+            out.emplace_back(parsePolygon(obj.at("coordinates"), datum, crs));
         } else if (type == "MultiPoint") {
-            for (auto const &c : geom.at("coordinates"))
+            auto const &coords_arr = obj.at("coordinates").as_array();
+            for (auto const &c : coords_arr)
                 out.emplace_back(parsePoint(c, datum, crs));
         } else if (type == "MultiLineString") {
-            for (auto const &linegeoson : geom.at("coordinates"))
+            auto const &coords_arr = obj.at("coordinates").as_array();
+            for (auto const &linegeoson : coords_arr)
                 out.emplace_back(parseLineString(linegeoson, datum, crs));
         } else if (type == "MultiPolygon") {
-            for (auto const &poly : geom.at("coordinates"))
+            auto const &coords_arr = obj.at("coordinates").as_array();
+            for (auto const &poly : coords_arr)
                 out.emplace_back(parsePolygon(poly, datum, crs));
         } else if (type == "GeometryCollection") {
-            for (auto const &sub : geom.at("geometries")) {
+            auto const &geoms_arr = obj.at("geometries").as_array();
+            for (auto const &sub : geoms_arr) {
                 auto subs = parseGeometry(sub, datum, crs);
                 out.insert(out.end(), subs.begin(), subs.end());
             }
@@ -125,44 +150,50 @@ namespace geoson {
 
     FeatureCollection ReadFeatureCollection(const std::filesystem::path &file) {
         auto fc_json = op::ReadFeatureCollection(file);
+        auto const &fc_obj = fc_json.as_object();
 
-        if (!fc_json.contains("properties") || !fc_json["properties"].is_object())
+        if (!fc_obj.contains("properties") || !fc_obj.at("properties").is_object())
             throw std::runtime_error("missing top-level 'properties'");
-        auto &P = fc_json["properties"];
+        auto const &P = fc_obj.at("properties").as_object();
 
-        if (!P.contains("crs") || !P["crs"].is_string())
+        if (!P.contains("crs") || !P.at("crs").is_string())
             throw std::runtime_error("'properties' missing string 'crs'");
-        if (!P.contains("datum") || !P["datum"].is_array() || P["datum"].size() < 3)
+        if (!P.contains("datum") || !P.at("datum").is_array() || P.at("datum").as_array().size() < 3)
             throw std::runtime_error("'properties' missing array 'datum' of ≥3 numbers");
-        if (!P.contains("heading") || !P["heading"].is_number())
+        if (!P.contains("heading") || !P.at("heading").is_number())
             throw std::runtime_error("'properties' missing numeric 'heading'");
 
-        auto crsVal = parseCRS(P["crs"].get<std::string>());
-        auto &A = P["datum"];
-        concord::Datum d{A[0].get<double>(), A[1].get<double>(), A[2].get<double>()};
-        double yaw = P["heading"].get<double>();
+        auto crsVal = parseCRS(std::string(P.at("crs").as_string()));
+        auto const &A = P.at("datum").as_array();
+        concord::Datum d{boost::json::value_to<double>(A[0]), boost::json::value_to<double>(A[1]),
+                         boost::json::value_to<double>(A[2])};
+        double yaw = boost::json::value_to<double>(P.at("heading"));
         concord::Euler euler{0.0, 0.0, yaw};
 
         FeatureCollection fc;
         fc.datum = d;
         fc.heading = euler;
-        fc.features.reserve(fc_json["features"].size());
+        fc.features.reserve(fc_obj.at("features").as_array().size());
 
-        for (const auto &[key, value] : P.items()) {
+        for (const auto &[key, value] : P) {
             if (key != "crs" && key != "datum" && key != "heading") {
                 if (value.is_string()) {
-                    fc.global_properties[key] = value.get<std::string>();
+                    fc.global_properties[std::string(key)] = std::string(value.as_string());
                 } else {
-                    fc.global_properties[key] = value.dump();
+                    fc.global_properties[std::string(key)] = boost::json::serialize(value);
                 }
             }
         }
 
-        for (auto const &feat : fc_json["features"]) {
-            if (feat.value("geometry", json{}).is_null())
+        for (auto const &feat : fc_obj.at("features").as_array()) {
+            auto const &feat_obj = feat.as_object();
+            if (!feat_obj.contains("geometry") || feat_obj.at("geometry").is_null())
                 continue;
-            auto geoms = parseGeometry(feat["geometry"], d, crsVal);
-            auto props_map = parseProperties(feat.value("properties", json::object()));
+            auto geoms = parseGeometry(feat_obj.at("geometry"), d, crsVal);
+            std::unordered_map<std::string, std::string> props_map;
+            if (feat_obj.contains("properties")) {
+                props_map = parseProperties(feat_obj.at("properties"));
+            }
             for (auto &g : geoms)
                 fc.features.emplace_back(Feature{std::move(g), props_map});
         }
