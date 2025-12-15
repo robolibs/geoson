@@ -191,7 +191,7 @@ namespace geoget {
 
     void PolygonDrawer::handle_request(int client_fd) {
         char buffer[4096] = {0};
-        read(client_fd, buffer, 4096);
+        [[maybe_unused]] auto bytes_read = read(client_fd, buffer, 4096);
 
         std::string request(buffer);
         std::istringstream iss(request);
