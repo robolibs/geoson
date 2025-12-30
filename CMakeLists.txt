@@ -31,9 +31,6 @@ FetchContent_Declare(concord GIT_REPOSITORY https://github.com/onlyhead/concord.
 FetchContent_MakeAvailable(concord)
 list(APPEND ext_deps concord::concord)
 
-find_package(Boost REQUIRED COMPONENTS json)
-list(APPEND ext_deps Boost::json)
-
 # --------------------------------------------------------------------------------------------------
 # Build library
 set(SOURCES

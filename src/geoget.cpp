@@ -1,9 +1,61 @@
 #include "geoget/geoget.hpp"
-#include <boost/json.hpp>
+
+#include "json.hpp"
+#include <cstdlib>
+#include <cstring>
+#include <memory>
+#include <sstream>
 
 namespace geoget {
 
-    using json = boost::json::value;
+    namespace {
+        // RAII wrapper for json_value_s to ensure proper cleanup
+        struct JsonDeleter {
+            void operator()(json_value_s *ptr) const {
+                if (ptr)
+                    free(ptr);
+            }
+        };
+        using JsonPtr = std::unique_ptr<json_value_s, JsonDeleter>;
+
+        // Helper to get an object from a JSON value
+        json_object_s *get_object(json_value_s *val) {
+            if (!val || val->type != json_type_object)
+                return nullptr;
+            return static_cast<json_object_s *>(val->payload);
+        }
+
+        // Helper to find an element in a JSON object by key
+        json_object_element_s *find_element(json_object_s *obj, const char *key) {
+            if (!obj)
+                return nullptr;
+            for (auto *elem = obj->start; elem; elem = elem->next) {
+                if (elem->name && strcmp(elem->name->string, key) == 0) {
+                    return elem;
+                }
+            }
+            return nullptr;
+        }
+
+        // Helper to get a number value from a JSON value
+        double get_number(json_value_s *val) {
+            if (!val || val->type != json_type_number)
+                return 0.0;
+            auto *num = static_cast<json_number_s *>(val->payload);
+            return std::stod(std::string(num->number, num->number_size));
+        }
+
+        // Helper to build a simple JSON response string
+        std::string json_response(bool success, size_t point_count = 0, size_t polygon_count = 0) {
+            std::ostringstream oss;
+            oss << "{\"success\":" << (success ? "true" : "false");
+            if (point_count > 0 || polygon_count > 0) {
+                oss << ",\"pointCount\":" << point_count << ",\"polygonCount\":" << polygon_count;
+            }
+            oss << "}";
+            return oss.str();
+        }
+    } // namespace
 
     std::string PolygonDrawer::get_html() {
         if (single_point_mode) {
@@ -234,10 +286,24 @@ namespace geoget {
 
         std::string body = request.substr(body_start + 4);
         try {
-            json data = boost::json::parse(body);
-            auto const &obj = data.as_object();
-            double lat = boost::json::value_to<double>(obj.at("lat"));
-            double lon = boost::json::value_to<double>(obj.at("lon"));
+            JsonPtr data(json_parse(body.c_str(), body.size()));
+            if (!data) {
+                return "HTTP/1.1 400 Bad Request\r\n\r\nInvalid JSON";
+            }
+
+            auto *obj = get_object(data.get());
+            if (!obj) {
+                return "HTTP/1.1 400 Bad Request\r\n\r\nInvalid JSON object";
+            }
+
+            auto *lat_elem = find_element(obj, "lat");
+            auto *lon_elem = find_element(obj, "lon");
+            if (!lat_elem || !lon_elem) {
+                return "HTTP/1.1 400 Bad Request\r\n\r\nMissing lat/lon";
+            }
+
+            double lat = get_number(lat_elem->value);
+            double lon = get_number(lon_elem->value);
 
             points.push_back({lat, lon});
 
@@ -260,10 +326,24 @@ namespace geoget {
 
         std::string body = request.substr(body_start + 4);
         try {
-            json data = boost::json::parse(body);
-            auto const &obj = data.as_object();
-            double lat = boost::json::value_to<double>(obj.at("lat"));
-            double lon = boost::json::value_to<double>(obj.at("lon"));
+            JsonPtr data(json_parse(body.c_str(), body.size()));
+            if (!data) {
+                return "HTTP/1.1 400 Bad Request\r\n\r\nInvalid JSON";
+            }
+
+            auto *obj = get_object(data.get());
+            if (!obj) {
+                return "HTTP/1.1 400 Bad Request\r\n\r\nInvalid JSON object";
+            }
+
+            auto *lat_elem = find_element(obj, "lat");
+            auto *lon_elem = find_element(obj, "lon");
+            if (!lat_elem || !lon_elem) {
+                return "HTTP/1.1 400 Bad Request\r\n\r\nMissing lat/lon";
+            }
+
+            double lat = get_number(lat_elem->value);
+            double lon = get_number(lon_elem->value);
 
             points.clear();
             points.push_back({lat, lon});
@@ -355,20 +435,17 @@ namespace geoget {
         }
         done_cv.notify_one();
 
-        boost::json::object response;
-        response["success"] = true;
+        std::string response_json;
         if (single_point_mode) {
-            response["pointCount"] = all_single_points.size();
-            response["polygonCount"] = 0;
+            response_json = json_response(true, all_single_points.size(), 0);
         } else {
-            response["pointCount"] = 0;
-            response["polygonCount"] = all_polygons.size();
+            response_json = json_response(true, 0, all_polygons.size());
         }
 
         return "HTTP/1.1 200 OK\r\n"
                "Content-Type: application/json\r\n"
                "\r\n" +
-               boost::json::serialize(response);
+               response_json;
     }
 
     std::vector<Point> PolygonDrawer::collect_points() {
