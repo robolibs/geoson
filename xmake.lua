@@ -2,7 +2,7 @@
 -- NOTE: Due to xmake description domain limitations, PROJECT_NAME must be hardcoded
 --       and kept in sync with the NAME file. The VERSION is read dynamically.
 local PROJECT_NAME = "geoson"
-local PROJECT_VERSION = "0.0.2"
+local PROJECT_VERSION = "0.0.1"
 
 -- Dependencies formats:
 --   Git:    {"name", "https://github.com/org/repo.git", "tag"}
@@ -190,6 +190,7 @@ local function add_binaries(pattern, opts)
             add_deps(PROJECT_NAME)
             add_includedirs("include")
             add_defines("SHORT_NAMESPACE")
+            add_defines("PROJECT_DIR=\"" .. os.projectdir() .. "\"")
 
             if opts.packages then
                 for _, pkg in ipairs(opts.packages) do add_packages(pkg) end

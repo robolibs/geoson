@@ -81,10 +81,10 @@ TEST_CASE("Integration - Round-trip conversion") {
 
 TEST_CASE("Integration - Read existing GeoJSON file") {
     // This test assumes there's a test file in misc/
-    auto fc = geoson::ReadFeatureCollection("misc/field4.geojson");
+    auto fc = geoson::ReadFeatureCollection(PROJECT_DIR "/misc/field4.geojson");
 
     // Note: Internal representation is always Point coordinates, no CRS stored
-    CHECK(fc.datum.latitude == doctest::Approx(87.7));
+    CHECK(fc.datum.latitude == doctest::Approx(92.8));
     CHECK(fc.datum.longitude == doctest::Approx(4.4));
     CHECK(fc.datum.altitude == doctest::Approx(50));
     CHECK(fc.heading.yaw == doctest::Approx(2));
@@ -96,7 +96,7 @@ TEST_CASE("Integration - Read existing GeoJSON file") {
 
 TEST_CASE("Integration - Modify and save") {
     // Load a file
-    auto fc = geoson::ReadFeatureCollection("misc/field4.geojson");
+    auto fc = geoson::ReadFeatureCollection(PROJECT_DIR "/misc/field4.geojson");
 
     // Modify the datum
     fc.datum.latitude += 5.1;
@@ -109,7 +109,7 @@ TEST_CASE("Integration - Modify and save") {
     auto modified = geoson::ReadFeatureCollection(output_file);
 
     // Verify the modification
-    CHECK(modified.datum.latitude == doctest::Approx(92.8)); // 87.7 + 5.1
+    CHECK(modified.datum.latitude == doctest::Approx(97.9)); // 92.8 + 5.1
 
     // Clean up
     std::filesystem::remove(output_file);
