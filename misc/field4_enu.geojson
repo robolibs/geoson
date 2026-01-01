@@ -2,11 +2,7 @@
    "type":"FeatureCollection",
    "properties":{
       "crs":"ENU",
-      "datum":[
-         5.65,
-         51.9877,
-         0
-      ],
+      "datum":[5.65, 51.9877, 0],
       "heading":0
    },
    "features":[
@@ -15,6 +11,7 @@
          "properties":{
          },
          "geometry":{
+            "type":"Polygon",
             "coordinates":[
                [
                   [
@@ -54,8 +51,7 @@
                      4.0315937798731
                   ]
                ]
-            ],
-            "type":"Polygon",
+            ]
          }
       }
    ]
