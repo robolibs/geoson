@@ -198,14 +198,21 @@ namespace geoson {
 
             double x = get_number(x_elem->value);
             double y = get_number(y_elem->value);
-            double z = z_elem ? get_number(z_elem->value) : 0.0;
+            bool has_z = (z_elem != nullptr);
+            double z = has_z ? get_number(z_elem->value) : 0.0;
 
             if (crs == geoson::CRS::ENU) {
                 return dp::Point{x, y, z};
             } else {
-                concord::earth::WGS wgs{y, x, z};
+                // For WGS84 input, convert to ENU coordinates
+                // If input has no Z value (2D GeoJSON), use datum altitude to avoid
+                // large Z offsets due to Earth curvature in the ENU frame
+                double wgs_alt = has_z ? z : datum.altitude;
+                concord::earth::WGS wgs{y, x, wgs_alt};
                 auto enu = concord::frame::to_enu(datum, wgs);
-                return dp::Point{enu.east(), enu.north(), enu.up()};
+                // For 2D input, set Z to altitude difference from datum (typically 0)
+                double enu_z = has_z ? enu.up() : (z - datum.altitude);
+                return dp::Point{enu.east(), enu.north(), enu_z};
             }
         }
 
@@ -349,11 +356,14 @@ namespace geoson {
 
         auto crsVal = detail::parse_crs(detail::get_string(crs_elem->value));
 
-        // Parse datum array
+        // Parse datum array - GeoJSON uses [longitude, latitude, altitude] order
         auto *d0 = datum_arr->start;
         auto *d1 = d0->next;
         auto *d2 = d1->next;
-        dp::Geo d{detail::get_number(d0->value), detail::get_number(d1->value), detail::get_number(d2->value)};
+        double lon = detail::get_number(d0->value);
+        double lat = detail::get_number(d1->value);
+        double alt = detail::get_number(d2->value);
+        dp::Geo d{lat, lon, alt}; // dp::Geo stores as {latitude, longitude, altitude}
 
         double yaw = detail::get_number(heading_elem->value);
         dp::Euler euler{0.0, 0.0, yaw};

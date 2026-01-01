@@ -11,7 +11,7 @@ TEST_CASE("Parser - Properties parsing through file") {
         "type": "FeatureCollection",
         "properties": {
             "crs": "EPSG:4326",
-            "datum": [52.0, 5.0, 0.0],
+            "datum": [5.0, 52.0, 0.0],
             "heading": 2.0
         },
         "features": [
@@ -52,7 +52,7 @@ TEST_CASE("Parser - Different geometry types") {
             "type": "FeatureCollection",
             "properties": {
                 "crs": "EPSG:4326",
-                "datum": [52.0, 5.0, 0.0],
+                "datum": [5.0, 52.0, 0.0],
                 "heading": 2.0
             },
             "features": [
@@ -84,7 +84,7 @@ TEST_CASE("Parser - Different geometry types") {
             "type": "FeatureCollection",
             "properties": {
                 "crs": "EPSG:4326",
-                "datum": [52.0, 5.0, 0.0],
+                "datum": [5.0, 52.0, 0.0],
                 "heading": 2.0
             },
             "features": [
@@ -116,7 +116,7 @@ TEST_CASE("Parser - Different geometry types") {
             "type": "FeatureCollection",
             "properties": {
                 "crs": "EPSG:4326",
-                "datum": [52.0, 5.0, 0.0],
+                "datum": [5.0, 52.0, 0.0],
                 "heading": 2.0
             },
             "features": [
@@ -149,7 +149,7 @@ TEST_CASE("Parser - File operations") {
         "type": "FeatureCollection",
         "properties": {
             "crs": "EPSG:4326",
-            "datum": [52.0, 5.0, 0.0],
+            "datum": [5.0, 52.0, 0.0],
             "heading": 2.0
         },
         "features": [

@@ -77,7 +77,7 @@ TEST_CASE("Error Handling - Missing required properties") {
         ofs << R"({
             "type": "FeatureCollection",
             "properties": {
-                "datum": [52.0, 5.0, 0.0],
+                "datum": [5.0, 52.0, 0.0],
                 "heading": 0.0
             },
             "features": []
@@ -95,7 +95,7 @@ TEST_CASE("Error Handling - Missing required properties") {
             "type": "FeatureCollection",
             "properties": {
                 "crs": 123,
-                "datum": [52.0, 5.0, 0.0],
+                "datum": [5.0, 52.0, 0.0],
                 "heading": 0.0
             },
             "features": []
@@ -148,7 +148,7 @@ TEST_CASE("Error Handling - Missing required properties") {
             "type": "FeatureCollection",
             "properties": {
                 "crs": "EPSG:4326",
-                "datum": [52.0, 5.0],
+                "datum": [5.0, 52.0],
                 "heading": 0.0
             },
             "features": []
@@ -166,7 +166,7 @@ TEST_CASE("Error Handling - Missing required properties") {
             "type": "FeatureCollection",
             "properties": {
                 "crs": "EPSG:4326",
-                "datum": [52.0, 5.0, 0.0]
+                "datum": [5.0, 52.0, 0.0]
             },
             "features": []
         })";
@@ -183,7 +183,7 @@ TEST_CASE("Error Handling - Missing required properties") {
             "type": "FeatureCollection",
             "properties": {
                 "crs": "EPSG:4326",
-                "datum": [52.0, 5.0, 0.0],
+                "datum": [5.0, 52.0, 0.0],
                 "heading": "invalid"
             },
             "features": []
@@ -204,7 +204,7 @@ TEST_CASE("Error Handling - Invalid geometry in files") {
             "type": "FeatureCollection",
             "properties": {
                 "crs": "EPSG:4326",
-                "datum": [52.0, 5.0, 0.0],
+                "datum": [5.0, 52.0, 0.0],
                 "heading": 0.0
             },
             "features": [
@@ -233,7 +233,7 @@ TEST_CASE("Error Handling - Invalid geometry in files") {
             "type": "FeatureCollection",
             "properties": {
                 "crs": "EPSG:4326",
-                "datum": [52.0, 5.0, 0.0],
+                "datum": [5.0, 52.0, 0.0],
                 "heading": 0.0
             },
             "features": [
@@ -286,7 +286,7 @@ TEST_CASE("Error Handling - Unknown CRS in files") {
             "type": "FeatureCollection",
             "properties": {
                 "crs": "UNKNOWN:12345",
-                "datum": [52.0, 5.0, 0.0],
+                "datum": [5.0, 52.0, 0.0],
                 "heading": 0.0
             },
             "features": []
@@ -306,7 +306,7 @@ TEST_CASE("Error Handling - Unknown CRS in files") {
             "type": "FeatureCollection",
             "properties": {
                 "crs": "epsg:4326",
-                "datum": [52.0, 5.0, 0.0],
+                "datum": [5.0, 52.0, 0.0],
                 "heading": 0.0
             },
             "features": []
@@ -331,7 +331,7 @@ TEST_CASE("Error Handling - Robust parsing") {
             "type": "FeatureCollection",
             "properties": {
                 "crs": "EPSG:4326",
-                "datum": [52.0, 5.0, 0.0],
+                "datum": [5.0, 52.0, 0.0],
                 "heading": 0.0
             },
             "features": [
@@ -367,7 +367,7 @@ TEST_CASE("Error Handling - Robust parsing") {
             "type": "FeatureCollection",
             "properties": {
                 "crs": "EPSG:4326",
-                "datum": [52.0, 5.0, 0.0],
+                "datum": [5.0, 52.0, 0.0],
                 "heading": 0.0
             },
             "features": [

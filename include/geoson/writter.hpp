@@ -134,8 +134,8 @@ namespace geoson {
             oss << R"("crs":"ENU")";
         }
 
-        // Datum
-        oss << "," << R"("datum":[)" << std::setprecision(15) << fc.datum.latitude << "," << fc.datum.longitude << ","
+        // Datum - GeoJSON uses [longitude, latitude, altitude] order
+        oss << "," << R"("datum":[)" << std::setprecision(15) << fc.datum.longitude << "," << fc.datum.latitude << ","
             << fc.datum.altitude << "]";
 
         // Heading

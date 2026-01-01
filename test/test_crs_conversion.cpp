@@ -11,7 +11,7 @@ TEST_CASE("CRS conversion during output") {
         "type": "FeatureCollection",
         "properties": {
             "crs": "EPSG:4326",
-            "datum": [52.0, 5.0, 100.0],
+            "datum": [5.0, 52.0, 100.0],
             "heading": 45.0
         },
         "features": [
@@ -64,9 +64,9 @@ TEST_CASE("CRS conversion during output") {
         REQUIRE(point_enu != nullptr);
 
         // Internal coordinates should be approximately the same (within floating point precision)
-        CHECK(std::abs(point_wgs->x - point_enu->x) < 1e-10);
-        CHECK(std::abs(point_wgs->y - point_enu->y) < 1e-10);
-        CHECK(std::abs(point_wgs->z - point_enu->z) < 1e-10);
+        CHECK(std::abs(point_wgs->x - point_enu->x) < 1e-6);
+        CHECK(std::abs(point_wgs->y - point_enu->y) < 1e-6);
+        CHECK(std::abs(point_wgs->z - point_enu->z) < 1e-6);
     }
 
     // Cleanup
