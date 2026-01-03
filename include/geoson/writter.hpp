@@ -1,103 +1,176 @@
 #pragma once
 
+#include "geoson/types.hpp"
+
+#include <cmath>
 #include <filesystem>
 #include <fstream>
-#include <nlohmann/json.hpp>
-
-#include "geoson/types.hpp"
+#include <iomanip>
+#include <sstream>
 
 namespace geoson {
 
-    /// helper to turn a single Geometry into its GeoJSON object
-    inline nlohmann::json geometryToJson(Geometry const &geom) {
-        // small helper to build [lon,lat,alt]
-        auto ptCoords = [&](concord::Point const &p) {
-            return nlohmann::json::array({p.wgs.lon, p.wgs.lat, p.wgs.alt});
+    namespace detail {
+        // Helper to escape a string for JSON
+        inline std::string escape_string(const std::string &s) {
+            std::string result;
+            result.reserve(s.size() + 2);
+            for (char c : s) {
+                switch (c) {
+                case '"':
+                    result += "\\\"";
+                    break;
+                case '\\':
+                    result += "\\\\";
+                    break;
+                case '\b':
+                    result += "\\b";
+                    break;
+                case '\f':
+                    result += "\\f";
+                    break;
+                case '\n':
+                    result += "\\n";
+                    break;
+                case '\r':
+                    result += "\\r";
+                    break;
+                case '\t':
+                    result += "\\t";
+                    break;
+                default:
+                    result += c;
+                    break;
+                }
+            }
+            return result;
+        }
+
+        // Helper to build a JSON array of coordinates
+        inline std::string coords_to_json(double x, double y, double z, bool round_z = false) {
+            std::ostringstream oss;
+            oss << "[" << std::setprecision(15) << x << "," << y << ",";
+            if (round_z) {
+                oss << static_cast<int>(std::round(z));
+            } else {
+                oss << std::setprecision(15) << z;
+            }
+            oss << "]";
+            return oss.str();
+        }
+    } // namespace detail
+
+    inline std::string geometryToJson(Geometry const &geom, const dp::Geo &datum, geoson::CRS outputCrs) {
+        auto ptCoords = [&](dp::Point const &p) -> std::string {
+            if (outputCrs == geoson::CRS::ENU) {
+                return detail::coords_to_json(p.x, p.y, p.z);
+            } else {
+                concord::frame::ENU enu{p, datum};
+                auto wgs = concord::frame::to_wgs(enu);
+                return detail::coords_to_json(wgs.longitude, wgs.latitude, wgs.altitude, true);
+            }
         };
 
         return std::visit(
-            [&](auto const &shape) -> nlohmann::json {
+            [&](auto const &shape) -> std::string {
                 using T = std::decay_t<decltype(shape)>;
-                nlohmann::json j;
-                if constexpr (std::is_same_v<T, concord::Point>) {
-                    j["type"] = "Point";
-                    j["coordinates"] = ptCoords(shape);
-                } else if constexpr (std::is_same_v<T, concord::Line>) {
-                    j["type"] = "LineString";
-                    j["coordinates"] = nlohmann::json::array({ptCoords(shape.getStart()), ptCoords(shape.getEnd())});
-                } else if constexpr (std::is_same_v<T, concord::Path>) {
-                    j["type"] = "LineString";
-                    nlohmann::json arr = nlohmann::json::array();
-                    for (auto const &p : shape.getPoints())
-                        arr.push_back(ptCoords(p));
-                    j["coordinates"] = std::move(arr);
-                } else if constexpr (std::is_same_v<T, concord::Polygon>) {
-                    j["type"] = "Polygon";
-                    nlohmann::json rings = nlohmann::json::array();
-                    nlohmann::json ring = nlohmann::json::array();
-                    for (auto const &p : shape.getPoints())
-                        ring.push_back(ptCoords(p));
-                    rings.push_back(std::move(ring));
-                    j["coordinates"] = std::move(rings);
+                std::ostringstream oss;
+
+                if constexpr (std::is_same_v<T, dp::Point>) {
+                    oss << R"({"type":"Point","coordinates":)" << ptCoords(shape) << "}";
+                } else if constexpr (std::is_same_v<T, dp::Segment>) {
+                    oss << R"({"type":"LineString","coordinates":[)" << ptCoords(shape.start) << ","
+                        << ptCoords(shape.end) << "]}";
+                } else if constexpr (std::is_same_v<T, std::vector<dp::Point>>) {
+                    oss << R"({"type":"LineString","coordinates":[)";
+                    bool first = true;
+                    for (auto const &p : shape) {
+                        if (!first)
+                            oss << ",";
+                        first = false;
+                        oss << ptCoords(p);
+                    }
+                    oss << "]}";
+                } else if constexpr (std::is_same_v<T, dp::Polygon>) {
+                    oss << R"({"type":"Polygon","coordinates":[[)";
+                    bool first = true;
+                    for (auto const &p : shape.vertices) {
+                        if (!first)
+                            oss << ",";
+                        first = false;
+                        oss << ptCoords(p);
+                    }
+                    oss << "]]}";
                 }
-                return j;
+                return oss.str();
             },
             geom);
     }
 
-    /// turn one Feature into its GeoJSON object
-    inline nlohmann::json featureToJson(Feature const &f) {
-        nlohmann::json j;
-        j["type"] = "Feature";
-        j["properties"] = nlohmann::json::object();
-        for (auto const &kv : f.properties)
-            j["properties"][kv.first] = kv.second;
-        j["geometry"] = geometryToJson(f.geometry);
-        return j;
-    }
+    inline std::string featureToJson(Feature const &f, const dp::Geo &datum, geoson::CRS outputCrs) {
+        std::ostringstream oss;
+        oss << R"({"type":"Feature","properties":{)";
 
-    /// serialize a full FeatureCollection to GeoJSON
-    inline nlohmann::json toJson(FeatureCollection const &fc) {
-        nlohmann::json j;
-        j["type"] = "FeatureCollection";
-
-        // top‐level properties
-        {
-            auto &P = j["properties"];
-            P = nlohmann::json::object();
-
-            // crs → string
-            switch (fc.crs) {
-            case concord::CRS::WGS:
-                P["crs"] = "EPSG:4326";
-                break;
-            case concord::CRS::ENU:
-                P["crs"] = "ENU";
-                break;
-            }
-
-            // datum array
-            P["datum"] = nlohmann::json::array({fc.datum.lat, fc.datum.lon, fc.datum.alt});
-
-            // yaw only
-            P["heading"] = fc.heading.yaw;
+        bool first = true;
+        for (auto const &kv : f.properties) {
+            if (!first)
+                oss << ",";
+            first = false;
+            oss << "\"" << detail::escape_string(kv.first) << "\":\"" << detail::escape_string(kv.second) << "\"";
         }
 
-        // features
-        j["features"] = nlohmann::json::array();
-        for (auto const &f : fc.features)
-            j["features"].push_back(featureToJson(f));
-
-        return j;
+        oss << "}," << R"("geometry":)" << geometryToJson(f.geometry, datum, outputCrs) << "}";
+        return oss.str();
     }
 
-    /// write GeoJSON out to disk (pretty‐printed)
-    inline void WriteFeatureCollection(FeatureCollection const &fc, std::filesystem::path const &outPath) {
-        auto j = toJson(fc);
+    inline std::string toJson(FeatureCollection const &fc, geoson::CRS outputCrs) {
+        std::ostringstream oss;
+        oss << R"({"type":"FeatureCollection","properties":{)";
+
+        // CRS
+        if (outputCrs == geoson::CRS::WGS) {
+            oss << R"("crs":"EPSG:4326")";
+        } else {
+            oss << R"("crs":"ENU")";
+        }
+
+        // Datum - GeoJSON uses [longitude, latitude, altitude] order
+        oss << "," << R"("datum":[)" << std::setprecision(15) << fc.datum.longitude << "," << fc.datum.latitude << ","
+            << fc.datum.altitude << "]";
+
+        // Heading
+        oss << "," << R"("heading":)" << std::setprecision(15) << fc.heading.yaw;
+
+        // Global properties
+        for (const auto &[key, value] : fc.global_properties) {
+            oss << ",\"" << detail::escape_string(key) << "\":\"" << detail::escape_string(value) << "\"";
+        }
+
+        oss << "}," << R"("features":[)";
+
+        bool first = true;
+        for (auto const &f : fc.features) {
+            if (!first)
+                oss << ",";
+            first = false;
+            oss << featureToJson(f, fc.datum, outputCrs);
+        }
+
+        oss << "]}";
+        return oss.str();
+    }
+
+    inline void WriteFeatureCollection(FeatureCollection const &fc, std::filesystem::path const &outPath,
+                                       geoson::CRS outputCrs) {
+        std::string j = toJson(fc, outputCrs);
         std::ofstream ofs(outPath);
         if (!ofs)
             throw std::runtime_error("Cannot open for write: " + outPath.string());
-        ofs << j.dump(2) << "\n";
+        ofs << j << "\n";
+    }
+
+    inline void WriteFeatureCollection(FeatureCollection const &fc, std::filesystem::path const &outPath) {
+        WriteFeatureCollection(fc, outPath, geoson::CRS::WGS);
     }
 
 } // namespace geoson
