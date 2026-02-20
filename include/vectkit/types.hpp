@@ -10,7 +10,7 @@
 
 namespace dp = ::datapod;
 
-namespace geoson {
+namespace vectkit {
     // Internal geometry representation: all coordinates are stored as Point (ENU/local system)
     // Regardless of input CRS, coordinates are converted to local coordinate system during parsing
     using Geometry = std::variant<dp::Point, dp::Segment, std::vector<dp::Point>, dp::Polygon>;
@@ -30,4 +30,4 @@ namespace geoson {
         std::unordered_map<std::string, std::string> global_properties; // Global properties for the collection
     };
 
-} // namespace geoson
+} // namespace vectkit

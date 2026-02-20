@@ -1,6 +1,6 @@
 #pragma once
 
-#include "geoson/types.hpp"
+#include "vectkit/types.hpp"
 
 #include <cmath>
 #include <filesystem>
@@ -8,7 +8,7 @@
 #include <iomanip>
 #include <sstream>
 
-namespace geoson {
+namespace vectkit {
 
     namespace detail {
         // Helper to escape a string for JSON
@@ -60,9 +60,9 @@ namespace geoson {
         }
     } // namespace detail
 
-    inline std::string geometryToJson(Geometry const &geom, const dp::Geo &datum, geoson::CRS outputCrs) {
+    inline std::string geometryToJson(Geometry const &geom, const dp::Geo &datum, vectkit::CRS outputCrs) {
         auto ptCoords = [&](dp::Point const &p) -> std::string {
-            if (outputCrs == geoson::CRS::ENU) {
+            if (outputCrs == vectkit::CRS::ENU) {
                 return detail::coords_to_json(p.x, p.y, p.z);
             } else {
                 concord::frame::ENU enu{p, datum};
@@ -107,7 +107,7 @@ namespace geoson {
             geom);
     }
 
-    inline std::string featureToJson(Feature const &f, const dp::Geo &datum, geoson::CRS outputCrs) {
+    inline std::string featureToJson(Feature const &f, const dp::Geo &datum, vectkit::CRS outputCrs) {
         std::ostringstream oss;
         oss << R"({"type":"Feature","properties":{)";
 
@@ -123,12 +123,12 @@ namespace geoson {
         return oss.str();
     }
 
-    inline std::string toJson(FeatureCollection const &fc, geoson::CRS outputCrs) {
+    inline std::string toJson(FeatureCollection const &fc, vectkit::CRS outputCrs) {
         std::ostringstream oss;
         oss << R"({"type":"FeatureCollection","properties":{)";
 
         // CRS
-        if (outputCrs == geoson::CRS::WGS) {
+        if (outputCrs == vectkit::CRS::WGS) {
             oss << R"("crs":"EPSG:4326")";
         } else {
             oss << R"("crs":"ENU")";
@@ -161,7 +161,7 @@ namespace geoson {
     }
 
     inline void WriteFeatureCollection(FeatureCollection const &fc, std::filesystem::path const &outPath,
-                                       geoson::CRS outputCrs) {
+                                       vectkit::CRS outputCrs) {
         std::string j = toJson(fc, outputCrs);
         std::ofstream ofs(outPath);
         if (!ofs)
@@ -170,7 +170,7 @@ namespace geoson {
     }
 
     inline void WriteFeatureCollection(FeatureCollection const &fc, std::filesystem::path const &outPath) {
-        WriteFeatureCollection(fc, outPath, geoson::CRS::WGS);
+        WriteFeatureCollection(fc, outPath, vectkit::CRS::WGS);
     }
 
-} // namespace geoson
+} // namespace vectkit

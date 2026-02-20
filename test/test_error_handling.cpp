@@ -1,6 +1,6 @@
 #include <doctest/doctest.h>
 
-#include "geoson/geoson.hpp"
+#include "vectkit/vectkit.hpp"
 #include <filesystem>
 #include <fstream>
 
@@ -14,7 +14,7 @@ TEST_CASE("Error Handling - Invalid JSON") {
         ofs << "{ invalid json content }";
         ofs.close();
 
-        CHECK_THROWS(geoson::ReadFeatureCollection(test_file));
+        CHECK_THROWS(vectkit::ReadFeatureCollection(test_file));
 
         std::filesystem::remove(test_file);
     }
@@ -24,8 +24,8 @@ TEST_CASE("Error Handling - Invalid JSON") {
         ofs << R"({"features": []})";
         ofs.close();
 
-        CHECK_THROWS_WITH(geoson::ReadFeatureCollection(test_file),
-                          "geoson::ReadFeatureCollection(): top-level object has no string 'type' field");
+        CHECK_THROWS_WITH(vectkit::ReadFeatureCollection(test_file),
+                          "vectkit::ReadFeatureCollection(): top-level object has no string 'type' field");
 
         std::filesystem::remove(test_file);
     }
@@ -35,8 +35,8 @@ TEST_CASE("Error Handling - Invalid JSON") {
         ofs << R"({"type": 123, "features": []})";
         ofs.close();
 
-        CHECK_THROWS_WITH(geoson::ReadFeatureCollection(test_file),
-                          "geoson::ReadFeatureCollection(): top-level object has no string 'type' field");
+        CHECK_THROWS_WITH(vectkit::ReadFeatureCollection(test_file),
+                          "vectkit::ReadFeatureCollection(): top-level object has no string 'type' field");
 
         std::filesystem::remove(test_file);
     }
@@ -53,7 +53,7 @@ TEST_CASE("Error Handling - Missing required properties") {
         })";
         ofs.close();
 
-        CHECK_THROWS_WITH(geoson::ReadFeatureCollection(test_file), "missing top-level 'properties'");
+        CHECK_THROWS_WITH(vectkit::ReadFeatureCollection(test_file), "missing top-level 'properties'");
 
         std::filesystem::remove(test_file);
     }
@@ -67,7 +67,7 @@ TEST_CASE("Error Handling - Missing required properties") {
         })";
         ofs.close();
 
-        CHECK_THROWS_WITH(geoson::ReadFeatureCollection(test_file), "missing top-level 'properties'");
+        CHECK_THROWS_WITH(vectkit::ReadFeatureCollection(test_file), "missing top-level 'properties'");
 
         std::filesystem::remove(test_file);
     }
@@ -84,7 +84,7 @@ TEST_CASE("Error Handling - Missing required properties") {
         })";
         ofs.close();
 
-        CHECK_THROWS_WITH(geoson::ReadFeatureCollection(test_file), "'properties' missing string 'crs'");
+        CHECK_THROWS_WITH(vectkit::ReadFeatureCollection(test_file), "'properties' missing string 'crs'");
 
         std::filesystem::remove(test_file);
     }
@@ -102,7 +102,7 @@ TEST_CASE("Error Handling - Missing required properties") {
         })";
         ofs.close();
 
-        CHECK_THROWS_WITH(geoson::ReadFeatureCollection(test_file), "'properties' missing string 'crs'");
+        CHECK_THROWS_WITH(vectkit::ReadFeatureCollection(test_file), "'properties' missing string 'crs'");
 
         std::filesystem::remove(test_file);
     }
@@ -119,7 +119,7 @@ TEST_CASE("Error Handling - Missing required properties") {
         })";
         ofs.close();
 
-        CHECK_THROWS_WITH(geoson::ReadFeatureCollection(test_file), "'properties' missing array 'datum' of ≥3 numbers");
+        CHECK_THROWS_WITH(vectkit::ReadFeatureCollection(test_file), "'properties' missing array 'datum' of ≥3 numbers");
 
         std::filesystem::remove(test_file);
     }
@@ -137,7 +137,7 @@ TEST_CASE("Error Handling - Missing required properties") {
         })";
         ofs.close();
 
-        CHECK_THROWS_WITH(geoson::ReadFeatureCollection(test_file), "'properties' missing array 'datum' of ≥3 numbers");
+        CHECK_THROWS_WITH(vectkit::ReadFeatureCollection(test_file), "'properties' missing array 'datum' of ≥3 numbers");
 
         std::filesystem::remove(test_file);
     }
@@ -155,7 +155,7 @@ TEST_CASE("Error Handling - Missing required properties") {
         })";
         ofs.close();
 
-        CHECK_THROWS_WITH(geoson::ReadFeatureCollection(test_file), "'properties' missing array 'datum' of ≥3 numbers");
+        CHECK_THROWS_WITH(vectkit::ReadFeatureCollection(test_file), "'properties' missing array 'datum' of ≥3 numbers");
 
         std::filesystem::remove(test_file);
     }
@@ -172,7 +172,7 @@ TEST_CASE("Error Handling - Missing required properties") {
         })";
         ofs.close();
 
-        CHECK_THROWS_WITH(geoson::ReadFeatureCollection(test_file), "'properties' missing numeric 'heading'");
+        CHECK_THROWS_WITH(vectkit::ReadFeatureCollection(test_file), "'properties' missing numeric 'heading'");
 
         std::filesystem::remove(test_file);
     }
@@ -190,7 +190,7 @@ TEST_CASE("Error Handling - Missing required properties") {
         })";
         ofs.close();
 
-        CHECK_THROWS_WITH(geoson::ReadFeatureCollection(test_file), "'properties' missing numeric 'heading'");
+        CHECK_THROWS_WITH(vectkit::ReadFeatureCollection(test_file), "'properties' missing numeric 'heading'");
 
         std::filesystem::remove(test_file);
     }
@@ -223,7 +223,7 @@ TEST_CASE("Error Handling - Invalid geometry in files") {
         ofs << invalid_content;
         ofs.close();
 
-        CHECK_THROWS(geoson::ReadFeatureCollection(test_file));
+        CHECK_THROWS(vectkit::ReadFeatureCollection(test_file));
 
         std::filesystem::remove(test_file);
     }
@@ -253,7 +253,7 @@ TEST_CASE("Error Handling - Invalid geometry in files") {
         ofs.close();
 
         // Should not throw but may result in empty geometry list
-        auto fc = geoson::ReadFeatureCollection(test_file);
+        auto fc = vectkit::ReadFeatureCollection(test_file);
         // The feature should be skipped or handled gracefully
 
         std::filesystem::remove(test_file);
@@ -262,18 +262,18 @@ TEST_CASE("Error Handling - Invalid geometry in files") {
 
 TEST_CASE("Error Handling - File I/O errors") {
     SUBCASE("ReadFeatureCollection - nonexistent file") {
-        CHECK_THROWS_WITH(geoson::ReadFeatureCollection("/nonexistent/path/file.geojson"),
-                          doctest::Contains("geoson::ReadFeatureCollection(): cannot open"));
+        CHECK_THROWS_WITH(vectkit::ReadFeatureCollection("/nonexistent/path/file.geojson"),
+                          doctest::Contains("vectkit::ReadFeatureCollection(): cannot open"));
     }
 
     SUBCASE("WriteFeatureCollection - invalid directory") {
         dp::Geo datum{52.0, 5.0, 0.0};
         dp::Euler heading{0.0, 0.0, 0.0};
-        std::vector<geoson::Feature> features;
+        std::vector<vectkit::Feature> features;
 
-        geoson::FeatureCollection fc{datum, heading, std::move(features), {}};
+        vectkit::FeatureCollection fc{datum, heading, std::move(features), {}};
 
-        CHECK_THROWS_WITH(geoson::WriteFeatureCollection(fc, "/nonexistent/directory/file.geojson"),
+        CHECK_THROWS_WITH(vectkit::WriteFeatureCollection(fc, "/nonexistent/directory/file.geojson"),
                           doctest::Contains("Cannot open for write"));
     }
 }
@@ -296,7 +296,7 @@ TEST_CASE("Error Handling - Unknown CRS in files") {
         ofs << invalid_content;
         ofs.close();
 
-        CHECK_THROWS_WITH(geoson::ReadFeatureCollection(test_file), "Unknown CRS string: UNKNOWN:12345");
+        CHECK_THROWS_WITH(vectkit::ReadFeatureCollection(test_file), "Unknown CRS string: UNKNOWN:12345");
 
         std::filesystem::remove(test_file);
     }
@@ -316,7 +316,7 @@ TEST_CASE("Error Handling - Unknown CRS in files") {
         ofs << invalid_content;
         ofs.close();
 
-        CHECK_THROWS_WITH(geoson::ReadFeatureCollection(test_file), "Unknown CRS string: epsg:4326");
+        CHECK_THROWS_WITH(vectkit::ReadFeatureCollection(test_file), "Unknown CRS string: epsg:4326");
 
         std::filesystem::remove(test_file);
     }
@@ -352,7 +352,7 @@ TEST_CASE("Error Handling - Robust parsing") {
         })";
         ofs.close();
 
-        auto fc = geoson::ReadFeatureCollection(test_file);
+        auto fc = vectkit::ReadFeatureCollection(test_file);
 
         // Should only have one feature (the null geometry one is skipped)
         CHECK(fc.features.size() == 1);
@@ -382,7 +382,7 @@ TEST_CASE("Error Handling - Robust parsing") {
         })";
         ofs.close();
 
-        auto fc = geoson::ReadFeatureCollection(test_file);
+        auto fc = vectkit::ReadFeatureCollection(test_file);
 
         CHECK(fc.features.size() == 1);
         CHECK(fc.features[0].properties.empty());

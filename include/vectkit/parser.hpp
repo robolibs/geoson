@@ -1,7 +1,7 @@
 #pragma once
 
-#include "geoson/types.hpp"
 #include "json.hpp"
+#include "vectkit/types.hpp"
 
 #include <cstdlib>
 #include <cstring>
@@ -15,7 +15,7 @@
 #include <variant>
 #include <vector>
 
-namespace geoson {
+namespace vectkit {
 
     namespace detail {
         // RAII wrapper for json_value_s to ensure proper cleanup
@@ -124,7 +124,7 @@ namespace geoson {
         inline JsonPtr read_json_file(const std::filesystem::path &file) {
             std::ifstream ifs(file);
             if (!ifs) {
-                throw std::runtime_error("geoson::ReadFeatureCollection(): cannot open \"" + file.string() + '\"');
+                throw std::runtime_error("vectkit::ReadFeatureCollection(): cannot open \"" + file.string() + '\"');
             }
 
             std::stringstream buffer;
@@ -133,7 +133,7 @@ namespace geoson {
 
             json_value_s *root = json_parse(content.c_str(), content.size());
             if (!root) {
-                throw std::runtime_error("geoson::ReadFeatureCollection(): failed to parse JSON");
+                throw std::runtime_error("vectkit::ReadFeatureCollection(): failed to parse JSON");
             }
 
             JsonPtr j(root);
@@ -141,13 +141,13 @@ namespace geoson {
             auto *obj = get_object(j.get());
             if (!obj) {
                 throw std::runtime_error(
-                    "geoson::ReadFeatureCollection(): top-level object has no string 'type' field");
+                    "vectkit::ReadFeatureCollection(): top-level object has no string 'type' field");
             }
 
             auto *type_elem = find_element(obj, "type");
             if (!type_elem || type_elem->value->type != json_type_string) {
                 throw std::runtime_error(
-                    "geoson::ReadFeatureCollection(): top-level object has no string 'type' field");
+                    "vectkit::ReadFeatureCollection(): top-level object has no string 'type' field");
             }
 
             std::string type = get_string(type_elem->value);
@@ -187,7 +187,7 @@ namespace geoson {
             return m;
         }
 
-        inline dp::Point parse_point(json_array_s *coords, const dp::Geo &datum, geoson::CRS crs) {
+        inline dp::Point parse_point(json_array_s *coords, const dp::Geo &datum, vectkit::CRS crs) {
             if (!coords || coords->length < 2) {
                 throw std::runtime_error("Invalid point coordinates");
             }
@@ -201,7 +201,7 @@ namespace geoson {
             bool has_z = (z_elem != nullptr);
             double z = has_z ? get_number(z_elem->value) : 0.0;
 
-            if (crs == geoson::CRS::ENU) {
+            if (crs == vectkit::CRS::ENU) {
                 return dp::Point{x, y, z};
             } else {
                 // For WGS84 input, convert to ENU coordinates
@@ -216,7 +216,7 @@ namespace geoson {
             }
         }
 
-        inline Geometry parse_line_string(json_array_s *coords, const dp::Geo &datum, geoson::CRS crs) {
+        inline Geometry parse_line_string(json_array_s *coords, const dp::Geo &datum, vectkit::CRS crs) {
             std::vector<dp::Point> pts;
             if (!coords)
                 return pts;
@@ -234,7 +234,7 @@ namespace geoson {
                 return pts;
         }
 
-        inline dp::Polygon parse_polygon(json_array_s *coords, const dp::Geo &datum, geoson::CRS crs) {
+        inline dp::Polygon parse_polygon(json_array_s *coords, const dp::Geo &datum, vectkit::CRS crs) {
             std::vector<dp::Point> pts;
             if (!coords || !coords->start)
                 return dp::Polygon{dp::Vector<dp::Point>{pts.begin(), pts.end()}};
@@ -254,7 +254,7 @@ namespace geoson {
             return dp::Polygon{dp::Vector<dp::Point>{pts.begin(), pts.end()}};
         }
 
-        inline std::vector<Geometry> parse_geometry(json_object_s *geom, const dp::Geo &datum, geoson::CRS crs) {
+        inline std::vector<Geometry> parse_geometry(json_object_s *geom, const dp::Geo &datum, vectkit::CRS crs) {
             std::vector<Geometry> out;
             if (!geom)
                 return out;
@@ -322,11 +322,11 @@ namespace geoson {
             return out;
         }
 
-        inline geoson::CRS parse_crs(const std::string &s) {
+        inline vectkit::CRS parse_crs(const std::string &s) {
             if (s == "EPSG:4326" || s == "WGS84" || s == "WGS")
-                return geoson::CRS::WGS;
+                return vectkit::CRS::WGS;
             else if (s == "ENU" || s == "ECEF")
-                return geoson::CRS::ENU;
+                return vectkit::CRS::ENU;
             throw std::runtime_error("Unknown CRS string: " + s);
         }
     } // namespace detail
@@ -437,4 +437,4 @@ namespace geoson {
         return os;
     }
 
-} // namespace geoson
+} // namespace vectkit

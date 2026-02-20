@@ -1,6 +1,6 @@
 #include <doctest/doctest.h>
 
-#include "geoson/geoson.hpp"
+#include "vectkit/vectkit.hpp"
 #include <filesystem>
 #include <fstream>
 
@@ -35,7 +35,7 @@ TEST_CASE("Parser - Properties parsing through file") {
     ofs << test_file_content;
     ofs.close();
 
-    auto fc = geoson::ReadFeatureCollection(test_file);
+    auto fc = vectkit::ReadFeatureCollection(test_file);
 
     CHECK(fc.features.size() == 1);
     const auto &feature = fc.features[0];
@@ -72,7 +72,7 @@ TEST_CASE("Parser - Different geometry types") {
         ofs << test_content;
         ofs.close();
 
-        auto fc = geoson::ReadFeatureCollection(test_file);
+        auto fc = vectkit::ReadFeatureCollection(test_file);
         CHECK(fc.features.size() == 1);
         CHECK(std::holds_alternative<dp::Point>(fc.features[0].geometry));
 
@@ -104,7 +104,7 @@ TEST_CASE("Parser - Different geometry types") {
         ofs << test_content;
         ofs.close();
 
-        auto fc = geoson::ReadFeatureCollection(test_file);
+        auto fc = vectkit::ReadFeatureCollection(test_file);
         CHECK(fc.features.size() == 1);
         CHECK(std::holds_alternative<dp::Segment>(fc.features[0].geometry));
 
@@ -136,7 +136,7 @@ TEST_CASE("Parser - Different geometry types") {
         ofs << test_content;
         ofs.close();
 
-        auto fc = geoson::ReadFeatureCollection(test_file);
+        auto fc = vectkit::ReadFeatureCollection(test_file);
         CHECK(fc.features.size() == 1);
         CHECK(std::holds_alternative<dp::Polygon>(fc.features[0].geometry));
 
@@ -166,14 +166,14 @@ TEST_CASE("Parser - File operations") {
         ]
     })";
 
-    const std::filesystem::path test_file = "/tmp/test_geoson.geojson";
+    const std::filesystem::path test_file = "/tmp/test_vectkit.geojson";
 
     SUBCASE("ReadFeatureCollection - valid file") {
         std::ofstream ofs(test_file);
         ofs << test_file_content;
         ofs.close();
 
-        auto fc = geoson::ReadFeatureCollection(test_file);
+        auto fc = vectkit::ReadFeatureCollection(test_file);
 
         CHECK(fc.datum.latitude == doctest::Approx(52.0));
         CHECK(fc.datum.longitude == doctest::Approx(5.0));
@@ -189,7 +189,7 @@ TEST_CASE("Parser - File operations") {
     }
 
     SUBCASE("ReadFeatureCollection - nonexistent file throws") {
-        CHECK_THROWS_AS(geoson::ReadFeatureCollection("/nonexistent/file.geojson"), std::runtime_error);
+        CHECK_THROWS_AS(vectkit::ReadFeatureCollection("/nonexistent/file.geojson"), std::runtime_error);
     }
 
     SUBCASE("ReadFeatureCollection - missing properties throws") {
@@ -202,7 +202,7 @@ TEST_CASE("Parser - File operations") {
         ofs << invalid_content;
         ofs.close();
 
-        CHECK_THROWS_WITH(geoson::ReadFeatureCollection(test_file), "missing top-level 'properties'");
+        CHECK_THROWS_WITH(vectkit::ReadFeatureCollection(test_file), "missing top-level 'properties'");
 
         std::filesystem::remove(test_file);
     }

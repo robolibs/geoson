@@ -1,6 +1,6 @@
 #include <doctest/doctest.h>
 
-#include "geoson/geoson.hpp"
+#include "vectkit/vectkit.hpp"
 #include <filesystem>
 #include <fstream>
 
@@ -11,7 +11,7 @@ TEST_CASE("Writer - Write and read back") {
     dp::Euler heading{0.0, 0.0, 2.0};
 
     // Create features using public API approach
-    std::vector<geoson::Feature> features;
+    std::vector<vectkit::Feature> features;
 
     // Point feature
     concord::earth::WGS wgsPoint{52.1, 5.1, 10.0};
@@ -19,7 +19,7 @@ TEST_CASE("Writer - Write and read back") {
     dp::Point point{enuPoint.east(), enuPoint.north(), enuPoint.up()};
     std::unordered_map<std::string, std::string> pointProps;
     pointProps["name"] = "test_point";
-    features.emplace_back(geoson::Feature{point, pointProps});
+    features.emplace_back(vectkit::Feature{point, pointProps});
 
     // Line feature
     concord::earth::WGS wgsStart{52.1, 5.1, 0.0};
@@ -31,20 +31,20 @@ TEST_CASE("Writer - Write and read back") {
     dp::Segment line{start, end};
     std::unordered_map<std::string, std::string> lineProps;
     lineProps["name"] = "test_line";
-    features.emplace_back(geoson::Feature{line, lineProps});
+    features.emplace_back(vectkit::Feature{line, lineProps});
 
-    geoson::FeatureCollection fc{datum, heading, std::move(features), {}};
+    vectkit::FeatureCollection fc{datum, heading, std::move(features), {}};
 
     const std::filesystem::path test_file = "/tmp/test_output.geojson";
 
     SUBCASE("Write WGS format and read back") {
-        geoson::write(fc, test_file, geoson::CRS::WGS);
+        vectkit::write(fc, test_file, vectkit::CRS::WGS);
 
         // Verify file exists
         CHECK(std::filesystem::exists(test_file));
 
         // Read back and verify content
-        auto loaded_fc = geoson::read(test_file);
+        auto loaded_fc = vectkit::read(test_file);
 
         CHECK(loaded_fc.datum.latitude == doctest::Approx(52.0));
         CHECK(loaded_fc.datum.longitude == doctest::Approx(5.0));
@@ -64,13 +64,13 @@ TEST_CASE("Writer - Write and read back") {
     }
 
     SUBCASE("Write ENU format and read back") {
-        geoson::write(fc, test_file, geoson::CRS::ENU);
+        vectkit::write(fc, test_file, vectkit::CRS::ENU);
 
         // Verify file exists
         CHECK(std::filesystem::exists(test_file));
 
         // Read back and verify content
-        auto loaded_fc = geoson::read(test_file);
+        auto loaded_fc = vectkit::read(test_file);
 
         CHECK(loaded_fc.datum.latitude == doctest::Approx(52.0));
         CHECK(loaded_fc.features.size() == 2);
@@ -79,7 +79,7 @@ TEST_CASE("Writer - Write and read back") {
     }
 
     SUBCASE("Write to invalid path throws") {
-        CHECK_THROWS_AS(geoson::write(fc, "/invalid/path/file.geojson"), std::runtime_error);
+        CHECK_THROWS_AS(vectkit::write(fc, "/invalid/path/file.geojson"), std::runtime_error);
     }
 }
 
@@ -87,25 +87,25 @@ TEST_CASE("Writer - Default CRS output") {
     dp::Geo datum{52.0, 5.0, 0.0};
     dp::Euler heading{0.0, 0.0, 1.5};
 
-    std::vector<geoson::Feature> features;
+    std::vector<vectkit::Feature> features;
     concord::earth::WGS wgsCoord{52.1, 5.1, 10.0};
     auto enu = concord::frame::to_enu(datum, wgsCoord);
     dp::Point point{enu.east(), enu.north(), enu.up()};
     std::unordered_map<std::string, std::string> props;
     props["name"] = "test_point";
-    features.emplace_back(geoson::Feature{point, props});
+    features.emplace_back(vectkit::Feature{point, props});
 
-    geoson::FeatureCollection fc{datum, heading, std::move(features), {}};
+    vectkit::FeatureCollection fc{datum, heading, std::move(features), {}};
 
     const std::filesystem::path test_file = "/tmp/test_default_output.geojson";
 
     SUBCASE("Default write (should be WGS)") {
-        geoson::write(fc, test_file); // No CRS specified - should default to WGS
+        vectkit::write(fc, test_file); // No CRS specified - should default to WGS
 
         // Verify file exists and can be read back
         CHECK(std::filesystem::exists(test_file));
 
-        auto loaded_fc = geoson::read(test_file);
+        auto loaded_fc = vectkit::read(test_file);
         CHECK(loaded_fc.features.size() == 1);
         CHECK(loaded_fc.features[0].properties["name"] == "test_point");
 

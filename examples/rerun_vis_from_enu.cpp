@@ -1,9 +1,9 @@
 #include "datapod/datapod.hpp"
-#include "geoson/geoson.hpp"
+#include "vectkit/vectkit.hpp"
 #include "rerun.hpp"
 #include <iostream>
 
-namespace gs = geoson;
+namespace gs = vectkit;
 namespace dp = datapod;
 namespace cc = concord;
 
@@ -14,7 +14,7 @@ inline rerun::LatLon enu_to_latlon(const dp::Point &enu_pt, const dp::Geo &datum
 }
 
 int main() {
-    auto rec = std::make_shared<rerun::RecordingStream>("geoson", "examples");
+    auto rec = std::make_shared<rerun::RecordingStream>("vectkit", "examples");
     if (rec->connect_grpc("rerun+http://0.0.0.0:9876/proxy").is_err()) {
         std::cerr << "Failed to connect to rerun\n";
         return 1;

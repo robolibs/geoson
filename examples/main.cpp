@@ -1,10 +1,10 @@
-#include "geoson/geoson.hpp"
+#include "vectkit/vectkit.hpp"
 #include <iostream>
 
 int main() {
     try {
         // 1) Read your GeoJSON
-        auto fc = geoson::read("misc/field4.geojson");
+        auto fc = vectkit::read("misc/field4.geojson");
 
         // 2) Print what we got
         std::cout << fc << "\n";
@@ -15,7 +15,7 @@ int main() {
                   << fc.datum.altitude << "\n";
 
         // 4) Save back out
-        geoson::write(fc, "misc/field4.geojson");
+        vectkit::write(fc, "misc/field4.geojson");
         std::cout << "Saved modified GeoJSON to misc/field4_modified.geojson\n";
     } catch (std::exception &e) {
         std::cerr << "ERROR: " << e.what() << "\n";

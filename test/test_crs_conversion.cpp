@@ -1,5 +1,5 @@
 #include "doctest/doctest.h"
-#include "geoson/geoson.hpp"
+#include "vectkit/vectkit.hpp"
 #include <filesystem>
 #include <fstream>
 
@@ -32,7 +32,7 @@ TEST_CASE("CRS conversion during output") {
     ofs.close();
 
     SUBCASE("Parse and verify internal representation") {
-        auto fc = geoson::read("test_crs_input.geojson");
+        auto fc = vectkit::read("test_crs_input.geojson");
 
         // Check that we parsed correctly
         CHECK(fc.features.size() == 1);
@@ -47,15 +47,15 @@ TEST_CASE("CRS conversion during output") {
     }
 
     SUBCASE("Output in different CRS formats") {
-        auto fc = geoson::read("test_crs_input.geojson");
+        auto fc = vectkit::read("test_crs_input.geojson");
 
         // Test output in WGS format
-        geoson::write(fc, "test_output_wgs.geojson", geoson::CRS::WGS);
-        auto fc_wgs = geoson::read("test_output_wgs.geojson");
+        vectkit::write(fc, "test_output_wgs.geojson", vectkit::CRS::WGS);
+        auto fc_wgs = vectkit::read("test_output_wgs.geojson");
 
         // Test output in ENU format
-        geoson::write(fc, "test_output_enu.geojson", geoson::CRS::ENU);
-        auto fc_enu = geoson::read("test_output_enu.geojson");
+        vectkit::write(fc, "test_output_enu.geojson", vectkit::CRS::ENU);
+        auto fc_enu = vectkit::read("test_output_enu.geojson");
 
         // Both should have the same internal representation after parsing
         auto *point_wgs = std::get_if<dp::Point>(&fc_wgs.features[0].geometry);

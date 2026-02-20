@@ -1,7 +1,7 @@
 #pragma once
 
-#include "geoson/geoson.hpp"
-#include "geoson/types.hpp"
+#include "vectkit/types.hpp"
+#include "vectkit/vectkit.hpp"
 
 #include <algorithm>
 #include <filesystem>
@@ -9,7 +9,7 @@
 #include <optional>
 #include <stdexcept>
 
-namespace geoson {
+namespace vectkit {
 
     struct Element {
         Geometry geometry;
@@ -41,7 +41,7 @@ namespace geoson {
             : field_boundary_(field_boundary), datum_(datum), heading_(heading), crs_(crs) {}
 
         static Vector fromFile(const std::filesystem::path &path) {
-            auto fc = geoson::read(path);
+            auto fc = vectkit::read(path);
 
             if (fc.features.empty()) {
                 throw std::runtime_error("Vector::fromFile: No features found in file");
@@ -107,7 +107,7 @@ namespace geoson {
                 fc.features.emplace_back(Feature{element.geometry, element.properties});
             }
 
-            geoson::write(fc, path, outputCrs);
+            vectkit::write(fc, path, outputCrs);
         }
 
         const dp::Polygon &getFieldBoundary() const { return field_boundary_; }
@@ -265,4 +265,4 @@ namespace geoson {
         auto cend() const { return elements_.cend(); }
     };
 
-} // namespace geoson
+} // namespace vectkit

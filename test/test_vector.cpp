@@ -1,6 +1,6 @@
 #include <doctest/doctest.h>
 
-#include "geoson/vector.hpp"
+#include "vectkit/vector.hpp"
 #include <filesystem>
 #include <fstream>
 
@@ -15,27 +15,27 @@ TEST_CASE("Vector - Basic Construction") {
                                                      dp::Point{100.0, 100.0, 0.0}, dp::Point{0.0, 100.0, 0.0}}}};
 
     SUBCASE("Constructor with default parameters") {
-        geoson::Vector vector(fieldBoundary);
+        vectkit::Vector vector(fieldBoundary);
 
         CHECK(vector.elementCount() == 0);
         CHECK_FALSE(vector.hasElements());
-        CHECK(vector.getCRS() == geoson::CRS::ENU);
+        CHECK(vector.getCRS() == vectkit::CRS::ENU);
     }
 
     SUBCASE("Constructor with all parameters") {
-        geoson::Vector vector(fieldBoundary, datum, heading, geoson::CRS::WGS);
+        vectkit::Vector vector(fieldBoundary, datum, heading, vectkit::CRS::WGS);
 
         CHECK(vector.getDatum().latitude == doctest::Approx(52.0));
         CHECK(vector.getDatum().longitude == doctest::Approx(5.0));
         CHECK(vector.getHeading().yaw == doctest::Approx(0.5));
-        CHECK(vector.getCRS() == geoson::CRS::WGS);
+        CHECK(vector.getCRS() == vectkit::CRS::WGS);
     }
 }
 
 TEST_CASE("Vector - Element Management") {
     dp::Polygon fieldBoundary{dp::Vector<dp::Point>{{dp::Point{0.0, 0.0, 0.0}, dp::Point{100.0, 0.0, 0.0},
                                                      dp::Point{100.0, 100.0, 0.0}, dp::Point{0.0, 100.0, 0.0}}}};
-    geoson::Vector vector(fieldBoundary);
+    vectkit::Vector vector(fieldBoundary);
 
     SUBCASE("Add and retrieve elements") {
         dp::Point point{50.0, 50.0, 0.0};
@@ -99,7 +99,7 @@ TEST_CASE("Vector - Element Management") {
 TEST_CASE("Vector - Field Management") {
     dp::Polygon fieldBoundary{dp::Vector<dp::Point>{
         {dp::Point{0.0, 0.0, 0.0}, dp::Point{50.0, 0.0, 0.0}, dp::Point{50.0, 50.0, 0.0}, dp::Point{0.0, 50.0, 0.0}}}};
-    geoson::Vector vector(fieldBoundary);
+    vectkit::Vector vector(fieldBoundary);
 
     SUBCASE("Field properties") {
         vector.setFieldProperty("name", "Test Field");
@@ -130,7 +130,7 @@ TEST_CASE("Vector - File I/O") {
                                                      dp::Point{100.0, 100.0, 0.0}, dp::Point{0.0, 100.0, 0.0}}}};
     dp::Geo datum{52.0, 5.0, 0.0};
 
-    geoson::Vector originalVector(fieldBoundary, datum);
+    vectkit::Vector originalVector(fieldBoundary, datum);
     originalVector.setFieldProperty("name", "Test Field");
     originalVector.addPoint({50.0, 50.0, 0.0}, "center", {{"important", "true"}});
     originalVector.addLine({{10.0, 10.0, 0.0}, {90.0, 90.0, 0.0}}, "diagonal");
@@ -143,7 +143,7 @@ TEST_CASE("Vector - File I/O") {
         CHECK(std::filesystem::exists(testFile));
 
         // Load from file
-        auto loadedVector = geoson::Vector::fromFile(testFile);
+        auto loadedVector = vectkit::Vector::fromFile(testFile);
 
         CHECK(loadedVector.elementCount() == 2);
         CHECK(loadedVector.getDatum().latitude == doctest::Approx(52.0));
@@ -163,10 +163,10 @@ TEST_CASE("Vector - File I/O") {
     }
 
     SUBCASE("Save with different CRS") {
-        originalVector.toFile(testFile, geoson::CRS::WGS);
+        originalVector.toFile(testFile, vectkit::CRS::WGS);
         CHECK(std::filesystem::exists(testFile));
 
-        auto loadedVector = geoson::Vector::fromFile(testFile);
+        auto loadedVector = vectkit::Vector::fromFile(testFile);
         CHECK(loadedVector.elementCount() == 2);
 
         std::filesystem::remove(testFile);
@@ -177,7 +177,7 @@ TEST_CASE("Vector - Error Handling") {
     SUBCASE("Out of range access") {
         dp::Polygon fieldBoundary{dp::Vector<dp::Point>{{dp::Point{0.0, 0.0, 0.0}, dp::Point{10.0, 0.0, 0.0},
                                                          dp::Point{10.0, 10.0, 0.0}, dp::Point{0.0, 10.0, 0.0}}}};
-        geoson::Vector vector(fieldBoundary);
+        vectkit::Vector vector(fieldBoundary);
 
         CHECK_THROWS_AS(vector.getElement(0), std::out_of_range);
         CHECK_THROWS_AS(vector.getElement(10), std::out_of_range);
@@ -185,14 +185,14 @@ TEST_CASE("Vector - Error Handling") {
 
     SUBCASE("File not found") {
         std::filesystem::path nonExistentFile = "/tmp/does_not_exist.geojson";
-        CHECK_THROWS(geoson::Vector::fromFile(nonExistentFile));
+        CHECK_THROWS(vectkit::Vector::fromFile(nonExistentFile));
     }
 }
 
 TEST_CASE("Vector - Iterators") {
     dp::Polygon fieldBoundary{dp::Vector<dp::Point>{
         {dp::Point{0.0, 0.0, 0.0}, dp::Point{10.0, 0.0, 0.0}, dp::Point{10.0, 10.0, 0.0}, dp::Point{0.0, 10.0, 0.0}}}};
-    geoson::Vector vector(fieldBoundary);
+    vectkit::Vector vector(fieldBoundary);
 
     vector.addPoint({1.0, 1.0, 0.0}, "p1");
     vector.addPoint({2.0, 2.0, 0.0}, "p2");

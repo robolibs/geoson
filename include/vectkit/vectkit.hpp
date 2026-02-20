@@ -4,7 +4,7 @@
 #include "types.hpp"
 #include "writter.hpp"
 
-namespace geoson {
+namespace vectkit {
 
     inline FeatureCollection read(const std::filesystem::path &file) { return ReadFeatureCollection(file); }
 
@@ -16,4 +16,6 @@ namespace geoson {
         WriteFeatureCollection(fc, outPath);
     }
 
-} // namespace geoson
+} // namespace vectkit
+
+namespace vk = vectkit;

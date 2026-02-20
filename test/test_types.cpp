@@ -1,6 +1,6 @@
 #include <doctest/doctest.h>
 
-#include "geoson/geoson.hpp"
+#include "vectkit/vectkit.hpp"
 #include <variant>
 
 namespace dp = ::datapod;
@@ -13,7 +13,7 @@ TEST_CASE("Types - Basic Geometry Variant") {
         auto enu = concord::frame::to_enu(datum, wgsCoord);
         dp::Point point{enu.east(), enu.north(), enu.up()};
 
-        geoson::Geometry geom = point;
+        vectkit::Geometry geom = point;
 
         CHECK(std::holds_alternative<dp::Point>(geom));
         auto *p = std::get_if<dp::Point>(&geom);
@@ -36,7 +36,7 @@ TEST_CASE("Types - Basic Geometry Variant") {
         dp::Point end{enuEnd.east(), enuEnd.north(), enuEnd.up()};
         dp::Segment line{start, end};
 
-        geoson::Geometry geom = line;
+        vectkit::Geometry geom = line;
 
         CHECK(std::holds_alternative<dp::Segment>(geom));
     }
@@ -50,7 +50,7 @@ TEST_CASE("Types - Basic Geometry Variant") {
             points.emplace_back(enu.east(), enu.north(), enu.up());
         }
 
-        geoson::Geometry geom = points;
+        vectkit::Geometry geom = points;
 
         CHECK(std::holds_alternative<std::vector<dp::Point>>(geom));
     }
@@ -66,7 +66,7 @@ TEST_CASE("Types - Basic Geometry Variant") {
         }
         dp::Polygon polygon{dp::Vector<dp::Point>{points.begin(), points.end()}};
 
-        geoson::Geometry geom = polygon;
+        vectkit::Geometry geom = polygon;
 
         CHECK(std::holds_alternative<dp::Polygon>(geom));
     }
@@ -82,7 +82,7 @@ TEST_CASE("Types - Feature") {
     properties["name"] = "test_feature";
     properties["type"] = "point_of_interest";
 
-    geoson::Feature feature{point, properties};
+    vectkit::Feature feature{point, properties};
 
     CHECK(std::holds_alternative<dp::Point>(feature.geometry));
     CHECK(feature.properties.size() == 2);
@@ -95,7 +95,7 @@ TEST_CASE("Types - FeatureCollection") {
     dp::Euler heading{0.0, 0.0, 2.0};
 
     // Create some features
-    std::vector<geoson::Feature> features;
+    std::vector<vectkit::Feature> features;
 
     // Add a point feature
     concord::earth::WGS wgsPoint{52.1, 5.1, 10.0};
@@ -103,7 +103,7 @@ TEST_CASE("Types - FeatureCollection") {
     dp::Point point{enuPoint.east(), enuPoint.north(), enuPoint.up()};
     std::unordered_map<std::string, std::string> pointProps;
     pointProps["name"] = "test_point";
-    features.emplace_back(geoson::Feature{point, pointProps});
+    features.emplace_back(vectkit::Feature{point, pointProps});
 
     // Add a line feature
     concord::earth::WGS wgsStart{52.1, 5.1, 0.0};
@@ -115,9 +115,9 @@ TEST_CASE("Types - FeatureCollection") {
     dp::Segment line{start, end};
     std::unordered_map<std::string, std::string> lineProps;
     lineProps["name"] = "test_line";
-    features.emplace_back(geoson::Feature{line, lineProps});
+    features.emplace_back(vectkit::Feature{line, lineProps});
 
-    geoson::FeatureCollection fc{datum, heading, std::move(features), {}};
+    vectkit::FeatureCollection fc{datum, heading, std::move(features), {}};
 
     // Note: Internal representation is always Point coordinates, no CRS stored
     CHECK(fc.datum.latitude == doctest::Approx(52.0));
