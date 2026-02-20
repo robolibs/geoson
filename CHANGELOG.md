@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.7] - 2026-02-20
+
+### <!-- 2 -->🚜 Refactor
+
+- Rename GeoJSON library to Vectkit
+
 ## [0.0.6] - 2026-01-18
 
 ### <!-- 7 -->⚙️ Miscellaneous Tasks
